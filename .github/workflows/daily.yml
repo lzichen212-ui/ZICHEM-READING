@@ -1,0 +1,65 @@
+name: daily-reading
+
+on:
+  schedule:
+    # 北京时间 06:15 抓取当天文章（UTC 22:15）
+    - cron: '15 22 * * *'
+    # 每小时检查一次是否到了推送时间
+    - cron: '5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    if: github.event.schedule != '5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Fetch articles
+        run: node scripts/fetch-articles.mjs
+      - name: Commit
+        run: |
+          git config user.name "zichen-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [ -f public/articles/index.json ]; then
+            git add public/articles/index.json
+            git diff --staged --quiet || git commit -m "chore: 更新每日文章 $(date +%F)"
+            git push
+          fi
+      - name: Sync to Gitee (国内镜像)
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_USER: ${{ secrets.GITEE_USER }}
+          GITEE_REPO: ${{ secrets.GITEE_REPO }}
+        run: |
+          if [ -n "$GITEE_TOKEN" ] && [ -n "$GITEE_USER" ] && [ -n "$GITEE_REPO" ]; then
+            git remote add gitee "https://$GITEE_USER:$GITEE_TOKEN@gitee.com/$GITEE_USER/$GITEE_REPO.git" 2>/dev/null || git remote set-url gitee "https://$GITEE_USER:$GITEE_TOKEN@gitee.com/$GITEE_USER/$GITEE_REPO.git"
+            git push gitee HEAD:main --force
+            echo "已同步文章到 Gitee"
+          else
+            echo "未配置 GITEE_* secret，跳过同步"
+          fi
+
+  notify:
+    if: github.event.schedule == '5 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Notify
+        env:
+          PUSHPLUS_TOKEN: ${{ secrets.PUSHPLUS_TOKEN }}
+          SERVERCHAN_KEY: ${{ secrets.SERVERCHAN_KEY }}
+        run: |
+          if [ -f public/articles/index.json ]; then
+            node scripts/notify.mjs
+          else
+            echo "还没有文章数据，跳过"
+          fi

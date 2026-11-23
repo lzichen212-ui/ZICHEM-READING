@@ -1,0 +1,14 @@
+{
+  "times": ["07:30"],
+  "count": 2,
+  "siteUrl": "https://37ljladmp97d32kndc7.traesite.cn",
+  "weights": {
+    "politics": 3,
+    "entertainment": 2,
+    "sports": 2,
+    "economy": 3,
+    "science": 4,
+    "life": 3,
+    "ai": 3
+  }
+}
