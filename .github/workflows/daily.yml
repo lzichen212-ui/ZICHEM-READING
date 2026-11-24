@@ -4,8 +4,8 @@ on:
   schedule:
     # 北京时间 06:15 抓取当天文章（UTC 22:15）
     - cron: '15 22 * * *'
-    # 每小时检查一次是否到了推送时间
-    - cron: '5 * * * *'
+    # 每小时 :20 检查一次是否到了推送时间（配合 07:30 推送）
+    - cron: '20 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   fetch:
-    if: github.event.schedule != '5 * * * *'
+    if: github.event.schedule != '20 * * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
           fi
 
   notify:
-    if: github.event.schedule == '5 * * * *'
+    if: github.event.schedule == '20 * * * *'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
