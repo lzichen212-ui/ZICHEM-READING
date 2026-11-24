@@ -9,6 +9,7 @@ import { WordsList } from './pages/WordsList'
 import { Sentences } from './pages/Sentences'
 import { Dictation } from './pages/Dictation'
 import { WrongBook } from './pages/WrongBook'
+import { Import } from './pages/Import'
 import { getSettings } from './lib/db'
 import { applyTheme, watchSystemTheme } from './lib/theme'
 
@@ -29,6 +30,7 @@ export function App() {
         <Route path="/" element={<Home />} />
         <Route path="/study" element={<Study />} />
         <Route path="/me" element={<Mine />} />
+        <Route path="/import" element={<Import />} />
       </Route>
       <Route path="/read/:id" element={<Reader />} />
       <Route path="/study/words" element={<WordsList />} />

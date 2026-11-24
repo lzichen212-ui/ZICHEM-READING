@@ -8,6 +8,7 @@ import {
   type DayStat,
   type Settings,
   type Category,
+  type Article,
   todayStr
 } from './types'
 
@@ -30,6 +31,7 @@ class ReadingDB extends Dexie {
   settings!: Table<Settings, string>
   dictCache!: Table<{ word: string; payload: string; savedAt: number }, string>
   transCache!: Table<{ hash: string; text: string; savedAt: number }, string>
+  custom!: Table<Article & { createdAt: number }, string>
 
   constructor() {
     super('zichen-reading')
@@ -43,6 +45,10 @@ class ReadingDB extends Dexie {
       settings: '&key',
       dictCache: '&word, savedAt',
       transCache: '&hash, savedAt'
+    })
+    // v2：新增「手动粘贴的文章」，与每日文章共存于本机
+    this.version(2).stores({
+      custom: '&id, createdAt'
     })
   }
 }
@@ -208,6 +214,25 @@ export async function removeWrong(id: string) {
   await db.wrong.delete(id)
 }
 
+/* ---------------- custom articles ---------------- */
+
+export async function saveCustomArticle(a: Article) {
+  await db.custom.put({ ...a, createdAt: Date.now() })
+}
+
+export async function getCustomArticle(id: string): Promise<Article | undefined> {
+  return db.custom.get(id)
+}
+
+export async function listCustomArticles(): Promise<(Article & { createdAt: number })[]> {
+  const all = await db.custom.toArray()
+  return all.sort((a, b) => b.createdAt - a.createdAt)
+}
+
+export async function removeCustomArticle(id: string) {
+  await db.custom.delete(id)
+}
+
 /* ---------------- backup ---------------- */
 
 export async function exportAll() {
@@ -220,7 +245,8 @@ export async function exportAll() {
     reads: await db.reads.toArray(),
     wrong: await db.wrong.toArray(),
     days: await db.days.toArray(),
-    settings: await db.settings.toArray()
+    settings: await db.settings.toArray(),
+    custom: await db.custom.toArray()
   }
   return data
 }
@@ -229,7 +255,7 @@ export async function importAll(data: any) {
   if (!data || typeof data !== 'object') throw new Error('文件格式不对')
   await db.transaction(
     'rw',
-    [db.words, db.sentences, db.highlights, db.reads, db.wrong, db.days, db.settings],
+    [db.words, db.sentences, db.highlights, db.reads, db.wrong, db.days, db.settings, db.custom],
     async () => {
       if (Array.isArray(data.words)) await db.words.bulkPut(data.words)
       if (Array.isArray(data.sentences)) await db.sentences.bulkPut(data.sentences)
@@ -238,6 +264,7 @@ export async function importAll(data: any) {
       if (Array.isArray(data.wrong)) await db.wrong.bulkPut(data.wrong)
       if (Array.isArray(data.days)) await db.days.bulkPut(data.days)
       if (Array.isArray(data.settings)) await db.settings.bulkPut(data.settings)
+      if (Array.isArray(data.custom)) await db.custom.bulkPut(data.custom)
     }
   )
 }
@@ -245,7 +272,7 @@ export async function importAll(data: any) {
 export async function clearAll() {
   await db.transaction(
     'rw',
-    [db.words, db.sentences, db.highlights, db.reads, db.wrong, db.days, db.dictCache, db.transCache],
+    [db.words, db.sentences, db.highlights, db.reads, db.wrong, db.days, db.dictCache, db.transCache, db.custom],
     async () => {
       await Promise.all([
         db.words.clear(),
@@ -255,7 +282,8 @@ export async function clearAll() {
         db.wrong.clear(),
         db.days.clear(),
         db.dictCache.clear(),
-        db.transCache.clear()
+        db.transCache.clear(),
+        db.custom.clear()
       ])
     }
   )

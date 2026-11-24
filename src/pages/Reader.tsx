@@ -455,10 +455,14 @@ export function Reader() {
         )}
         <p className="tiny muted center" style={{ marginTop: 24 }}>
           — 文章来自 {article.source}，仅供个人学习 —
-          <br />
-          <a href={article.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>
-            查看原文
-          </a>
+          {article.url ? (
+            <>
+              <br />
+              <a href={article.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>
+                查看原文
+              </a>
+            </>
+          ) : null}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { DEMO_ARTICLES } from '../data/demo'
+import { getCustomArticle } from './db'
 import type { Article } from './types'
 
 let cache: Article[] | null = null
@@ -54,6 +55,8 @@ export function getCachedArticle(id: string): Article | undefined {
 }
 
 export async function getArticle(id: string): Promise<Article | undefined> {
+  // 手动粘贴的文章只存在本机，id 以 custom- 开头
+  if (id.startsWith('custom-')) return getCustomArticle(id)
   const list = await loadArticles()
   return list.find(a => a.id === id)
 }

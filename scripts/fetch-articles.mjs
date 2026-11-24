@@ -134,6 +134,45 @@ function getOgImage(html) {
   return m ? m[1] : ''
 }
 
+/** 判断是否为媒体机构的默认占位图（不是真实文章配图） */
+function isPlaceholderImage(url) {
+  if (!url) return true
+  const u = url.toLowerCase()
+  const bad = [
+    'default',
+    'placeholder',
+    'no-image',
+    'noimage',
+    'nophoto',
+    'no_photo',
+    'stock',
+    'fallback',
+    'facebook-default',
+    'twitter-default',
+    'og-default',
+    'logo',
+    'sitewide',
+    'generic',
+    'blank',
+    'empty',
+    '1x1',
+    '1-pixel',
+    'sprite',
+    'data:image',
+    '.svg', // SVG 占位图（纯 logo）通常没用
+    '/icon/',
+    '/icons/',
+    '/avatar/',
+    '/avatars/',
+    '/logo/',
+    '/logos/'
+  ]
+  if (bad.some(k => u.includes(k))) return true
+  // 极短或极长也可疑（短的是纯色，长的可能是 data URL 或带参数但没用）
+  if (u.length < 30) return true
+  return false
+}
+
 function syllables(word) {
   const w = word.toLowerCase().replace(/[^a-z]/g, '')
   if (!w) return 0
@@ -185,7 +224,8 @@ async function main() {
           const body = paras.join('\n\n')
           const text = body || it.desc
           if (!text || text.split(/\s+/).length < 60) continue
-          const image = it.image || getOgImage(html)
+          let image = it.image || getOgImage(html)
+          if (isPlaceholderImage(image)) image = ''
           collected.push({
             id: hash(it.link),
             category: feed.cat,

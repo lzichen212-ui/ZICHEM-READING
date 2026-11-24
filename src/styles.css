@@ -245,9 +245,17 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
-  opacity: 0.6;
+  font-size: 40px;
+  line-height: 1;
+  opacity: 0.85;
 }
+.acard .thumb .fallback[data-cat="politics"]   { background: linear-gradient(135deg,#e0e7ef,#c8d5e3); }
+.acard .thumb .fallback[data-cat="entertainment"]{ background: linear-gradient(135deg,#fce4ec,#f8bbd0); }
+.acard .thumb .fallback[data-cat="sports"]     { background: linear-gradient(135deg,#e8f5e9,#c8e6c9); }
+.acard .thumb .fallback[data-cat="economy"]    { background: linear-gradient(135deg,#fff3e0,#ffe0b2); }
+.acard .thumb .fallback[data-cat="science"]    { background: linear-gradient(135deg,#e3f2fd,#bbdefb); }
+.acard .thumb .fallback[data-cat="life"]       { background: linear-gradient(135deg,#e8f5e9,#b2dfdb); }
+.acard .thumb .fallback[data-cat="ai"]         { background: linear-gradient(135deg,#ede7f6,#d1c4e9); }
 .acard .thumb .badge {
   position: absolute;
   left: 8px;
@@ -800,6 +808,63 @@ a {
   font-size: 11.5px;
   color: var(--muted);
   margin-top: 2px;
+}
+
+/* ---------- import ---------- */
+.import-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  margin-top: 14px;
+  box-shadow: var(--shadow-sm);
+  color: var(--ink);
+  transition: transform 0.15s;
+}
+.import-banner:active {
+  transform: scale(0.985);
+}
+.import-banner .ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.import-banner .grow {
+  flex: 1;
+  min-width: 0;
+}
+.import-banner .name {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+.import-banner .cnt {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.45;
+}
+.import-banner > svg {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.input.area {
+  height: 190px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.65;
+  resize: vertical;
+  font-family: inherit;
 }
 
 .study-tip {

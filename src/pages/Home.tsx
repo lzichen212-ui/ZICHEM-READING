@@ -2,17 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '../components/Icon'
 import { loadArticles } from '../lib/articles'
-import { getReadIds, getSettings, saveSettings } from '../lib/db'
+import { getReadIds, getSettings, listCustomArticles, saveSettings } from '../lib/db'
 import { CATEGORIES, DIFFICULTIES, catIcon, catLabel, diffLabel, fmtDate, todayStr, type Article, type Category, type Difficulty } from '../lib/types'
 
 function Thumb({ article, big }: { article: Article; big?: boolean }) {
   const [broken, setBroken] = useState(false)
+  const [tooSlow, setTooSlow] = useState(false)
+  useEffect(() => {
+    // 图片加载 4 秒还没完成，就当失败（有些 CDN 在手机上卡死不触发 error）
+    if (!article.image) return
+    const t = globalThis.setTimeout(() => setTooSlow(true), 4000)
+    return () => clearTimeout(t)
+  }, [article.image])
+  const showImg = article.image && !broken && !tooSlow
   return (
     <div className="thumb">
-      {article.image && !broken ? (
+      {showImg ? (
         <img src={article.image} alt="" loading="lazy" onError={() => setBroken(true)} />
       ) : (
-        <div className="fallback">{catIcon(article.category)}</div>
+        <div className="fallback" data-cat={article.category}>{catIcon(article.category)}</div>
       )}
       {big && <span className="badge">{catLabel(article.category)}</span>}
     </div>
@@ -27,10 +35,15 @@ export function Home() {
   const [diff, setDiff] = useState<Difficulty>('medium')
   const [readIds, setReadIds] = useState<Set<string>>(new Set())
   const [refreshKey, setRefreshKey] = useState(0)
+  const [customCount, setCustomCount] = useState(0)
 
   useEffect(() => {
     getSettings().then(s => setDiff(s.difficulty))
     getReadIds().then(setReadIds)
+    const loadCustom = () => listCustomArticles().then(l => setCustomCount(l.length))
+    loadCustom()
+    window.addEventListener('focus', loadCustom)
+    return () => window.removeEventListener('focus', loadCustom)
   }, [])
 
   useEffect(() => {
@@ -121,6 +134,20 @@ export function Home() {
           </button>
         ))}
       </div>
+
+      <button className="import-banner" onClick={() => nav('/import')}>
+        <div className="ico">
+          <Icon name="plus" size={19} />
+        </div>
+        <div className="grow">
+          <div className="name">粘贴文章精读</div>
+          <div className="cnt">
+            {customCount ? `已导入 ${customCount} 篇 · ` : ''}
+            把自己找到的英文贴进来，点词、翻译、朗读都能用
+          </div>
+        </div>
+        <Icon name="right" size={17} />
+      </button>
 
       <div className="section-head">
         <h2>今日推荐</h2>
