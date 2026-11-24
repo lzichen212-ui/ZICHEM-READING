@@ -178,35 +178,73 @@ async function getDict(word) {
   return payload
 }
 
-async function getTranslation(q, to) {
-  const key = to + '|' + q
-  if (transCache.has(key)) return transCache.get(key)
+// 翻译接口对单次查询有长度上限（约 500 字符），按句切块后分段翻译再拼接
+function splitChunks(text, max = 450) {
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (t.length <= max) return [t]
+  const sentences = t.split(/(?<=[.!?])\s+/)
+  const out = []
+  let cur = ''
+  for (const s of sentences) {
+    if (s.length > max) {
+      if (cur) {
+        out.push(cur)
+        cur = ''
+      }
+      for (let i = 0; i < s.length; i += max) out.push(s.slice(i, i + max))
+      continue
+    }
+    if ((cur ? cur.length + 1 : 0) + s.length > max) {
+      if (cur) out.push(cur)
+      cur = s
+    } else {
+      cur = cur ? cur + ' ' + s : s
+    }
+  }
+  if (cur) out.push(cur)
+  return out.filter(Boolean)
+}
 
-  let out = ''
+async function translateChunk(q, to) {
+  // 优先有道（中文更自然）
   try {
-    const r = await fetch(`${MYMEMORY}?q=${encodeURIComponent(q)}&langpair=en|${to === 'zh' ? 'zh-CN' : to}`)
+    const r = await fetch(`${FANYI}&i=${encodeURIComponent(q)}`)
     const j = await r.json()
-    const t = j?.responseData?.translatedText || ''
-    if (t && !/^MYMEMORY WARNING/i.test(t)) out = t
+    const rows = j?.translateResult?.[0]
+    if (Array.isArray(rows)) {
+      const t = rows.map(x => x.tgt).join('').trim()
+      if (t && (to !== 'zh' || /[\u4e00-\u9fa5]/.test(t))) return t
+    }
   } catch {
     /* ignore */
   }
-
-  if (!out) {
-    try {
-      const r = await fetch(`${FANYI}&i=${encodeURIComponent(q)}`)
-      const j = await r.json()
-      const rows = j?.translateResult?.[0]
-      if (Array.isArray(rows)) out = rows.map(x => x.tgt).join('')
-    } catch {
-      /* ignore */
-    }
+  // 回退 MyMemory
+  try {
+    const r = await fetch(`${MYMEMORY}?q=${encodeURIComponent(q)}&langpair=en|${to === 'zh' ? 'zh-CN' : to}`)
+    const j = await r.json()
+    const t = (j?.responseData?.translatedText || '').trim()
+    if (t && !/MYMEMORY WARNING|QUERY LENGTH LIMIT|INVALID|NO QUERY/i.test(t)) return t
+  } catch {
+    /* ignore */
   }
+  return ''
+}
 
-  if (!out) throw new Error('translate failed')
+async function getTranslation(q, to) {
+  const key = to + '|' + q
+  if (transCache.has(key)) return transCache.get(key)
+  const chunks = splitChunks(q, 450)
+  const parts = []
+  for (let i = 0; i < chunks.length; i += 4) {
+    const batch = chunks.slice(i, i + 4)
+    const res = await Promise.all(batch.map(c => translateChunk(c, to)))
+    parts.push(...res)
+  }
+  const joined = parts.filter(Boolean).join(to === 'zh' ? '' : ' ')
+  if (!joined) throw new Error('translate failed')
   if (transCache.size > MAX) transCache.delete(transCache.keys().next().value)
-  transCache.set(key, out)
-  return out
+  transCache.set(key, joined)
+  return joined
 }
 
 const send = (res, code, obj) => {

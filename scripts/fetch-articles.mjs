@@ -117,7 +117,9 @@ function extractParagraphs(html) {
     .filter(
       t =>
         t.length > 55 &&
-        !/cookie|subscribe|newsletter|sign up|advertisement|all rights reserved|follow us|share this/i.test(t)
+        !/cookie|subscribe|newsletter|sign up|advertisement|all rights reserved|follow us|share this|accuracy and availability of transcripts|does not offer or accept money|this text may not be in its final form|see the original article|visit npr\.org|transcripts? (?:are|is) created|provided by npr|is provided for personal, non-?commercial use/i.test(
+          t
+        )
     )
 
   const seen = new Set()
