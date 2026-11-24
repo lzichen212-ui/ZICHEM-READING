@@ -42,6 +42,8 @@ function xmlEscape(s) {
 /* ---------- 远程文章（Gitee 国内镜像） ---------- */
 const articlesCache = { data: null, ts: 0 }
 const ARTICLES_TTL = 10 * 60 * 1000
+const UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
